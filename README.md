@@ -4,7 +4,7 @@ An intelligent recommendation engine built to help students identify the most su
 
 ## 🚀 Live Demo
 Check out the live application here: 
-🔗 [https://university-course-recommendation-system.streamlit.app/](https://university-course-recommendation-system.streamlit.app/)
+🔗https://university-course-recommendation-system.streamlit.app/
 
 ## ✨ Key Features
 - **Z-Score Based Matching:** Recommends university courses by comparing user input against historical Z-score data.
