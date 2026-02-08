@@ -2,15 +2,15 @@ import camelot
 import pandas as pd
 import os
 
-# CONFIGURATION
+# BASIC INPUTS
 
 PDF_FILE_PATH = '2024_2025_Z_score.pdf' 
 OUTPUT_CSV_FILE = 'processed_cutoff_data_new1.csv' 
 PAGE_RANGE = '1-10' 
 def extract_tables_with_camelot(pdf_path):
     """
-    Extracts tables from the PDF file using the Camelot library.
-    The 'lattice' method is used for tables with drawn lines (grids).
+    Extract tables from the PDF file using the Camelot library
+    The 'lattice' method is used for tables with clear border
     """
     if not os.path.exists(pdf_path):
         print(f"Error: Input file '{pdf_path}' not found.")
@@ -21,8 +21,8 @@ def extract_tables_with_camelot(pdf_path):
     try:
         print(f"Starting table extraction from '{pdf_path}'...")
         
-        # Method: 'lattice' - for tables with visible lines (grids). 
-        # If no tables are found, we'll try 'stream' as a fallback.
+        # Use this for tables with clear border 
+        # Try the 'stream' method if no tables are found
         tables = camelot.read_pdf(
             pdf_path, 
             flavor='lattice', 
@@ -43,16 +43,16 @@ def extract_tables_with_camelot(pdf_path):
 
         print(f"\nCamelot successfully identified {tables.n} tables.")
 
-        # Convert all tables into Pandas DataFrames and concatenate them
+        # Convert all tables into Pandas DataFrames and join them
         for i, table in enumerate(tables):
             df = table.df
-            # Remove entirely empty rows
+            # Delete empty rows
             df.dropna(how='all', inplace=True) 
             if not df.empty:
                 all_dataframes.append(df)
                 print(f"Table {i+1} - Rows: {len(df)}")
         
-        # Concatenate all DataFrames into a single one
+        # Join all data into one table
         if all_dataframes:
             final_df = pd.concat(all_dataframes, ignore_index=True)
             

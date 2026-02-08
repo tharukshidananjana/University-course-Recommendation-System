@@ -3,9 +3,9 @@ import numpy as np
 import os
 
 # ----------------------------------------------------------------------
-# CONFIGURATION AND TUNABLE WEIGHTS (Parameters you can change easily)
+# CONFIGURATION SETTINGS
 # ----------------------------------------------------------------------
-# ⚠️ NEW: List of all Z-Score data files (for 3 years)
+# List of Z-Score data files for the last 3 years
 ZSCORE_DATA_FILES = [
     'final_zscore_data_new_03.csv',  # 2022-2023 
     'final_zscore_data_new_02.csv',  # 2023-2024 
@@ -13,19 +13,19 @@ ZSCORE_DATA_FILES = [
 ]
 RECOMMENDATION_COUNT = 10 
 
-# 1. Z-SCORE MARGIN WEIGHTS
+#  Z-score marks weight
 MAX_ZSCORE_MARGIN_CAP = 0.2 
 
-# 2. PREFERENCE BOOST SCORES
+#  Preference Boost scores
 PRIMARY_BOOST_VALUE = 1.0 
 SECONDARY_BOOST_VALUE = 0.5 
 BASE_BOOST_VALUE = 0.1 
 
-# 3. OVERALL WEIGHTS (Must sum to 1.0)
+#  Overall weights (Must sum to 1.0)
 WEIGHT_MARGIN = 0.5 
 WEIGHT_PREFERENCE = 0.5 
 
-# ⚠️ NEW: Stream-to-Course-Keyword Mapping for Eligibility Filtering
+# Filtering university courses according to the student's A/L subject stream
 #  ['Science', 'Technology', 'Arts', 'Commerce', 'Mathamatics']
 STREAM_COURSE_MAP = {
     'Science': ['Medicine', 'Dental', 'Veterinary', 'Science', 'Bio', 'Health', 'Nursing', 'Pharmacy'],
@@ -33,7 +33,7 @@ STREAM_COURSE_MAP = {
     'Arts': ['Arts', 'Law', 'Languages', 'Sociology', 'Archaeology', 'Social'],
     'Commerce': ['Management', 'Accounting', 'Business', 'Finance', 'Commerce'],
     'Mathamatics': ['Engineering', 'IT', 'Computer', 'Statistics', 'Quantity Surveying', 'Applied Science'] 
-    # Note: 'Mathamatics' stream is often broadly categorized into Physical Science courses.
+    # Note: 'Mathamatics' stream is often broadly categorized into Physical Science courses
 }
 
 # ----------------------------------------------------------------------
@@ -41,7 +41,7 @@ STREAM_COURSE_MAP = {
 
 def load_data(file_paths):
     """
-    Loads Z-Score data from multiple years, consolidates it, and 
+    Loads Z-Score data from multiple years,Reads data from all years, and 
     calculates the average Z-Score cutoff for each course.
     """
     all_years_df = []
@@ -57,13 +57,13 @@ def load_data(file_paths):
     # Combine all data into a single DataFrame
     combined_df = pd.concat(all_years_df, ignore_index=True)
     
-    # ⚠️ FIX STEP 1: Keep ONLY the required columns before grouping
+    # STEP 1: Keep only the essential columns
     required_cols = ['Course', 'University', 'District', 'Z_Score']
     
     for col in required_cols:
         if col not in combined_df.columns:
             print(f"Warning: Column '{col}' not found in one of the data files. Cannot proceed.")
-            return None # Error if critical columns are missing
+            return None # Error if essential columns are missing
     
     combined_df = combined_df[required_cols].copy() 
     
@@ -73,17 +73,17 @@ def load_data(file_paths):
     # Calculate the average Z_Score 
     combined_df['Avg_Z_Score'] = combined_df.groupby(group_keys)['Z_Score'].transform('mean')
     
-    # Keep only one row per unique entry
+    # Remove duplicate records
     final_avg_df = combined_df.drop_duplicates(subset=group_keys, keep='first').copy()
     
-    # ⚠️ FIX STEP 2: Drop the original 'Z_Score' column before renaming 'Avg_Z_Score'
+    # STEP 2: Drop the original 'Z_Score' column before replacing 'Avg_Z_Score'
     if 'Z_Score' in final_avg_df.columns:
         final_avg_df.drop(columns=['Z_Score'], inplace=True)
         
     # Rename the calculated average column
     final_avg_df.rename(columns={'Avg_Z_Score': 'Z_Score'}, inplace=True)
     
-    # Keep only the necessary columns
+    # Keep only the essential columns
     return final_avg_df[['Course', 'University', 'District', 'Z_Score']].copy()
     
 
@@ -97,13 +97,13 @@ def calculate_compatibility_score(student_z_score, district, primary_field, seco
 
     eligible_df = df_cutoffs.copy()
     
-    # 1. Stream Eligibility Filtering (NEW LOGIC)
+    # Stream Eligibility Filtering (NEW LOGIC)
     
     stream_keywords = STREAM_COURSE_MAP.get(stream, [])
     
     if stream_keywords:
-        # Create a regex pattern to search for any of the stream-relevant keywords
-        pattern = '|'.join(stream_keywords)
+        
+        pattern = '|'.join(stream_keywords)# Create a regex pattern to search for any of the stream-relevant keywords
         
         # Filter the DataFrame to include only courses matching the student's stream keywords
         stream_filter_mask = eligible_df['Course'].str.contains(pattern, case=False, na=False)
@@ -114,7 +114,7 @@ def calculate_compatibility_score(student_z_score, district, primary_field, seco
         print(f"No courses found matching the '{stream}' stream criteria.")
         return pd.DataFrame()
 
-    # 2. Filter by District: Find the cutoff for the student's district (e.g., 'COLOMBO')
+    #  Filter by District: Find the cutoff for the student's district (e.g., 'COLOMBO')
     district_cutoff_df = eligible_df[eligible_df['District'].str.upper() == district.upper()].copy()
 
     if district_cutoff_df.empty:
@@ -123,9 +123,9 @@ def calculate_compatibility_score(student_z_score, district, primary_field, seco
 
     merged_df = district_cutoff_df.copy()
     
-    # 3. Z-Score Eligibility and Margin Calculation (Uses the 'Z_Score' which is now the Average)
+    #  Z-Score Eligibility and Margin Calculation (Uses the 'Z_Score' which is now the Average)
     
-    # Check if the student's Z-Score meets or exceeds the course cutoff
+    # Check if the student's Z-Score higher than or equal the course cutoff
     merged_df['Is_Eligible'] = merged_df['Z_Score'] <= student_z_score
     
     # Calculate the Safety Margin 
@@ -139,7 +139,7 @@ def calculate_compatibility_score(student_z_score, district, primary_field, seco
     
     # --- WEIGHTED SCORING ---
     
-    # 4. Preference Boost Calculation
+    #  Preference Boost Calculation
     merged_df['Preference_Boost'] = BASE_BOOST_VALUE # Give a base boost to all stream-eligible courses
     
     # Primary Field Match 
@@ -153,19 +153,19 @@ def calculate_compatibility_score(student_z_score, district, primary_field, seco
         # Apply secondary boost only if it didn't get the primary boost
         merged_df.loc[~primary_mask & secondary_mask, 'Preference_Boost'] = SECONDARY_BOOST_VALUE
         
-    # 5. Final Weighted Score Calculation
+    #  Final Weighted Score Calculation
     # The final score is a weighted average of normalized margin and preference boost.
     merged_df['Compatibility_Score'] = (merged_df['Margin_Score'] * WEIGHT_MARGIN) + \
                                        (merged_df['Preference_Boost'] * WEIGHT_PREFERENCE)
 
-    # 6. Final Filtering and Ranking
+    #  Final Filtering and Ranking
     
-    # Filter only for eligible courses (where Z-Score meets or exceeds cutoff)
+    # Filter only for eligible courses (where Z-Score higher than or equal cutoff)
     recommended_df = merged_df[merged_df['Is_Eligible'] == True].copy()
     recommended_df = recommended_df.sort_values(by='Compatibility_Score', ascending=False)
     final_recommendations = recommended_df.head(RECOMMENDATION_COUNT)
     
-    # Ensure Safety Margin displays the true margin (not the capped value)
+    # keep Safety Margin displays the true margin (not the capped value)
     final_recommendations['Safety_Margin'] = final_recommendations['Safety_Margin'].round(4)
     
     output_columns = ['Course', 'University', 'Z_Score', 'District', 'Compatibility_Score', 'Safety_Margin']

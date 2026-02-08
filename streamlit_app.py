@@ -4,7 +4,7 @@ import plotly.express as px
 st.set_page_config(layout="wide")
 
 # Importing your recommendation_system file and the file list
-# We import ZSCORE_DATA_FILES to pass the list of 3-year files to load_data
+# import ZSCORE_DATA_FILES to pass the list of 3-year files to load_data
 from recommendation_system import load_data, calculate_compatibility_score, ZSCORE_DATA_FILES
 
 # --- 1. CONFIGURATION ---
@@ -266,7 +266,7 @@ if submitted and df_cutoffs is not None:
             'Z_Score_Value': [z_score] * len(plot_df)
         })
         
-        # Concatenate the dataframes
+        # Add the dataframes
         final_plot_df = pd.concat([plot_data, student_z_score_df])
 
         # 4.2. Create the Plotly Bar Chart
